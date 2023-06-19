@@ -1,7 +1,10 @@
 const knex = require('knex')(require('../../knexfile'));
 const jwt = require('jsonwebtoken');
+const { nanoid } = require('nanoid');
 
-const login = async (req, res) => {
+const genToken = (roomId) => jwt.sign({ roomId }, process.env.JWT_SECRET);
+
+const join = async (req, res) => {
   const { room_id } = req.body;
 
   if (!room_id) {
@@ -17,23 +20,30 @@ const login = async (req, res) => {
       return res.status(400).send('Room ID does not exist');
     }
 
-    const token = jwt.sign({ roomId: room_id }, process.env.JWT_SECRET);
-
-    res.status(201).json({ token });
+    return res.status(201).json(genToken(room_id));
   } catch (error) {
     console.error(error);
+    return res.status(500).send('Unable to join room');
   }
 };
 
-const signup = async (req, res) => {
+const create = async (_req, res) => {
   try {
-    res.status(200).json('nice');
+    const uuid = await nanoid(4);
+    const result = await knex('rooms').insert({
+      uuid: uuid,
+      max_players: 10,
+    });
+    const newRoom = await knex('rooms').where({ id: result[0] });
+
+    return res.status(201).json(genToken(newRoom[0].uuid));
   } catch (error) {
     console.error(error);
+    return res.status(500).send('Unable to create room');
   }
 };
 
 module.exports = {
-  login,
-  signup,
+  join,
+  create,
 };

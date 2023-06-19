@@ -1,7 +1,7 @@
 exports.up = function (knex) {
   return knex.schema.createTable('rooms', (table) => {
     table.increments('id').primary();
-    table.string('name').notNullable();
+    table.string('uuid').notNullable();
     table.integer('max_players').notNullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table
