@@ -1,8 +1,11 @@
 const knex = require('knex')(require('../../knexfile'));
 const jwt = require('jsonwebtoken');
-const { nanoid } = require('nanoid');
+// TODO: move to a utils folder
+const { customAlphabet } = require('nanoid');
+const nanoid = customAlphabet('1234567890', 7);
 
-const genToken = (roomId) => jwt.sign({ roomId }, process.env.JWT_SECRET);
+// TODO: move to utils folder
+const genToken = (roomId) => jwt.sign({ room_id: roomId }, process.env.JWT_SECRET);
 
 const join = async (req, res) => {
   const { room_id } = req.body;
@@ -14,7 +17,7 @@ const join = async (req, res) => {
   }
 
   try {
-    const room = await knex('rooms').where({ id: room_id });
+    const room = await knex('rooms').where({ uuid: room_id });
 
     if (room.length === 0) {
       return res.status(400).send('Room ID does not exist');
@@ -29,11 +32,11 @@ const join = async (req, res) => {
 
 const create = async (_req, res) => {
   try {
-    const uuid = await nanoid(4);
     const result = await knex('rooms').insert({
-      uuid: uuid,
+      uuid: await nanoid(),
       max_players: 10,
     });
+
     const newRoom = await knex('rooms').where({ id: result[0] });
 
     return res.status(201).json(genToken(newRoom[0].uuid));
