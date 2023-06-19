@@ -1,8 +1,11 @@
-const express = require("express");
-const { createServer } = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+const express = require('express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
 const app = express();
+
+//paths for the basic routes
+const roomRoutes = require('./routes/rooms-routes');
 
 // Create the http server
 const httpServer = createServer(app);
@@ -18,5 +21,6 @@ app.use(express.json());
 // app.use(authMiddleware);
 
 // Routes
+app.use('/api/rooms', roomRoutes);
 
 module.exports = { httpServer, io };
