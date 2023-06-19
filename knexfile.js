@@ -10,4 +10,11 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     charset: 'utf8',
   },
+  migrations: {
+    directory: './migrations',
+    tableName: 'knex_migrations',
+  },
+  seeds: {
+    directory: './seeds',
+  },
 };
