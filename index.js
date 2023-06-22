@@ -1,9 +1,12 @@
-const { httpServer } = require("./src/app");
-require("dotenv").config();
+const { httpServer } = require('./src/app');
+const { initSocket } = require('./src/socket');
+require('dotenv').config();
 
 // Globals
 const PORT = process.env.PORT || 8080;
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || '127.0.0.1';
+
+initSocket(httpServer);
 
 // Start Listening...
 const server = httpServer.listen(PORT, HOST, () => {
