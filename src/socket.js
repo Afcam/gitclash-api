@@ -1,33 +1,27 @@
 const { Server } = require('socket.io');
-const ioAuth = require('./middleware/httpAuth');
+const ioAuth = require('./middleware/ioAuth');
 
 const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
       origin: '*',
       methods: ['GET', 'POST'],
-      allowedHeaders: ['Authorization'],
     },
   });
 
   io.use(ioAuth.verifyToken);
 
   io.on('connection', (socket) => {
-    console.log('New client connected');
+    const roomUUID = socket.decoded.room_uuid;
+    const playerUUID = socket.decoded.player_uuid;
+    console.log('connect', playerUUID);
 
-    socket.on('joinRoom', (roomName) => {
-      socket.join(roomName);
-      console.log(`Client joined room: ${roomName}`);
-    });
-
-    socket.on('message', (message) => {
-      // Handle received message
-      // Example: Broadcast the message to all clients in the room
-      io.to(message.roomName).emit('message', message);
-    });
+    socket.join(roomUUID);
+    io.to(roomUUID).emit('joinedRoom', roomUUID);
+    io.to(roomUUID).emit('newPlayer', playerUUID);
 
     socket.on('disconnect', () => {
-      console.log('Client disconnected');
+      console.log('disconnected', playerUUID);
     });
   });
 };
