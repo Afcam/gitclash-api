@@ -17,7 +17,21 @@ const initSocket = (httpServer) => {
     console.log('connect', playerUUID);
 
     socket.join(roomUUID);
-    io.to(roomUUID).emit('joinedRoom', roomUUID);
+    io.to(roomUUID).emit('joinedRoom', {
+      title: 'Commit',
+      username: playerUUID,
+      message: 'Joined the room',
+      timestamp: new Date(),
+      room_id: roomUUID,
+    });
+
+    io.to(roomUUID).emit('activities', {
+      title: 'Commit',
+      username: playerUUID,
+      message: 'Joined the room',
+      timestamp: new Date(),
+      room_id: roomUUID,
+    });
     io.to(roomUUID).emit('newPlayer', playerUUID);
 
     socket.on('disconnect', () => {

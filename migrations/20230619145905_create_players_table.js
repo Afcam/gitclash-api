@@ -8,7 +8,8 @@ exports.up = function (knex) {
       .inTable('rooms')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
-    table.string('name').notNullable();
+    table.string('username').notNullable();
+    table.string('uuid').notNullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table
       .timestamp('updated_at')

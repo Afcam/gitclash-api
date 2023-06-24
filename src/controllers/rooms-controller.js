@@ -2,13 +2,25 @@ const knex = require('knex')(require('../../knexfile'));
 const jwt = require('jsonwebtoken');
 const { createPlayerUUID, createRoomUUID } = require('../utils/uuid');
 
-const getToken = (roomUUID, playerUUID) =>
-  jwt.sign({ room_uuid: roomUUID, player_uuid: playerUUID }, process.env.JWT_SECRET, {
-    expiresIn: '24h',
-  });
+const create = async (req, res, next) => {
+  try {
+    const roomUUID = createRoomUUID();
+    await knex('rooms').insert({
+      uuid: roomUUID,
+      max_players: 10,
+    });
+
+    req.body.room_uuid = roomUUID;
+
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send('Unable to create room');
+  }
+};
 
 const join = async (req, res) => {
-  const roomUUID = req.params.uuid;
+  const roomUUID = req.params.uuid || req.body.room_uuid;
 
   if (!roomUUID) {
     return res.status(400).send('Join requires a room uuid');
@@ -20,14 +32,26 @@ const join = async (req, res) => {
     if (room.length === 0) {
       return res.status(400).send('Room uuid does not exist');
     }
-
     const playerUUID = createPlayerUUID();
-    await knex('players').insert({
+    const result = await knex('players').insert({
       room_id: room[0].id,
-      name: playerUUID,
+      uuid: playerUUID,
+      username: req.body.username,
     });
 
-    const token = getToken(roomUUID, playerUUID);
+    if (result.length === 0) {
+      return new Error('Unable to create new player');
+    }
+
+    const newPlayer = await knex('players')
+      .join('rooms', 'rooms.id', 'players.room_id')
+      .select('players.uuid as player_uuid', 'rooms.uuid as room_uuid')
+      .where('players.id', result[0])
+      .limit(1);
+
+    const token = jwt.sign(newPlayer[0], process.env.JWT_SECRET, {
+      expiresIn: '24h',
+    });
 
     return res.status(201).json(token);
   } catch (error) {
@@ -36,30 +60,7 @@ const join = async (req, res) => {
   }
 };
 
-const create = async (_req, res) => {
-  try {
-    const roomUUID = createRoomUUID();
-    const roomId = await knex('rooms').insert({
-      uuid: roomUUID,
-      max_players: 10,
-    });
-
-    const playerUUID = createPlayerUUID();
-    await knex('players').insert({
-      room_id: roomId[0],
-      name: playerUUID,
-    });
-
-    const token = getToken(roomUUID, playerUUID);
-
-    return res.status(201).json(token);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send('Unable to create room');
-  }
-};
-
 module.exports = {
-  join,
   create,
+  join,
 };

@@ -3,6 +3,6 @@ const roomsController = require('../controllers/rooms-controller');
 
 router.route('/join/:uuid').post(roomsController.join);
 
-router.route('/create').post(roomsController.create);
+router.route('/create').post(roomsController.create, roomsController.join);
 
 module.exports = router;
