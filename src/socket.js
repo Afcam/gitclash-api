@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const ioAuth = require('./middleware/ioAuth');
-const { handlePlayCard, handleStartGame } = require('./sockets/game');
+const { handlePlayCard, handleStartGame, handleDrawCard } = require('./sockets/game');
 const { fetchPlayers, updatePlayerOnlineStatus } = require('./models/playerRepository');
 
 const initSocket = (httpServer) => {
@@ -44,6 +44,9 @@ const initSocket = (httpServer) => {
 
       socket.on('playCard', (message) => {
         handlePlayCard(socket, message.card, io);
+      });
+      socket.on('drawCard', () => {
+        handleDrawCard(socket, io);
       });
 
       socket.on('start', () => {

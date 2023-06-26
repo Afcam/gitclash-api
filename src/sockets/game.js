@@ -1,9 +1,26 @@
 const knex = require('knex')(require('../../knexfile'));
 
 const { createNewGame } = require('../game/new-game');
+const { fetchPlayers } = require('../models/playerRepository');
 
-function handlePlayCard(socket, card, io) {
-  io.emit('cardPlayed', { player_uuid: socket.decoded.player_uuid, card });
+const handlePlayCard = async (socket, card, io) => {
+  try {
+    const players = await fetchPlayers(socket.decoded.room_uuid);
+    let nextPlayerIndex = players.findIndex((p) => p.player_uuid === socket.decoded.player_uuid);
+    nextPlayerIndex = nextPlayerIndex + 1 === players.length ? 0 : nextPlayerIndex + 1;
+
+    io.to(socket.decoded.room_uuid).emit('nextPlayer', {
+      player_uuid: players[nextPlayerIndex].player_uuid,
+    });
+
+    io.emit('cardPlayed', { player_uuid: socket.decoded.player_uuid, card });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+function handleDrawCard(socket, io) {
+  // io.emit('cardPlayed', { player_uuid: socket.decoded.player_uuid, card });
 }
 const handleStartGame = async (socket, io) => {
   try {
@@ -28,7 +45,7 @@ const handleStartGame = async (socket, io) => {
         .join('room_cards', 'room_cards.player_id', 'players.id')
         .join('cards', 'cards.id', 'room_cards.card_id')
         .where('players.uuid', player.player_uuid)
-        .select('cards.type', 'cards.action', 'cards.comment');
+        .select('cards.type', 'cards.action', 'cards.comment', 'room_cards.id');
 
       io.to(player.player_uuid).emit('handCards', playerCards);
       playersInfo.push({ player_uuid: player.player_uuid, cards: playerCards.length });
@@ -51,33 +68,5 @@ const handleStartGame = async (socket, io) => {
 module.exports = {
   handlePlayCard,
   handleStartGame,
+  handleDrawCard,
 };
-
-// Fetch all cards and than filter them
-// const cards = await knex('rooms')
-// .where('rooms.uuid  ', socket.decoded.room_uuid)
-// .join('room_cards', 'room_cards.room_id', 'rooms.id')
-// .join('players', 'players.id', 'room_cards.player_id');
-// console.log(cards);
-
-// // Check if it's the current player's turn
-// if (socket.id === players[currentPlayerIndex]) {
-//   // Process the played card and update game state
-//   playedCards.push(card);
-
-//   // Emit the played card to all connected players
-// }
-// // Move to the next player
-// currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
-
-// // Emit the next player's turn to all connected players
-// io.emit('currentPlayer', players[currentPlayerIndex]);
-
-//     // Define an empty array to store the played cards
-// let playedCards = [];
-
-// // Define an array of connected players
-// let players = [];
-
-// // Define a variable to keep track of the current player's turn
-// let currentPlayerIndex = 0;
