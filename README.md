@@ -1,5 +1,39 @@
 # arthur-campos-capstone
 
+## Installation
+
+1. Instal [Node.JS](https://nodejs.org/en/download/package-manager/) latest version
+2. Clone this repo
+3. Install dependencies, just run in project folder: `npm i` or `yarn`
+## Usage
+
+1. run `npm start` to start server
+
+## Server Configuration 
+
+You can use `.env` file, to configure project like this:
+
+```
+PORT=8080
+HOST=127.0.0.1
+CORS_ORIGIN=http://localhost:3000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=capstone
+DB_USER=root
+DB_PASSWORD=rootroot
+JWT_SECRET= <someCustomkey>
+```
+
+you can just copy `.example-env`
+
+Run the commnad to set the db
+```
+npm run migrate
+npm run seed
+```
+
+
 ## Server-Side Implementation
 
 ### End-Point Descriptions
