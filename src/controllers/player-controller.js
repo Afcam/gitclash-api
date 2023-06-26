@@ -23,13 +23,12 @@ const info = async (req, res) => {
 
 const start = async (req, res) => {
   try {
-    console.log(req.decoded);
     createNewGame(req.decoded.room_uuid);
 
     return res.sendStatus(200);
   } catch (error) {
     console.error(error);
-    return res.status(500).send('Unable to join room');
+    return res.status(500).send('Unable to start game');
   }
 };
 

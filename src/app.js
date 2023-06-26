@@ -14,6 +14,5 @@ app.use(express.json());
 // Routes
 app.use('/api/rooms', require('./routes/rooms-routes'));
 app.use('/api/player', verifyToken, require('./routes/player-routes'));
-// app.use('/api/game', httpAuth.verifyToken, require('./routes/game-routes'));
 
 module.exports = { httpServer };

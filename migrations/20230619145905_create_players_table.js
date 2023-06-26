@@ -10,6 +10,7 @@ exports.up = function (knex) {
       .onDelete('CASCADE');
     table.string('username').notNullable();
     table.string('uuid').notNullable();
+    table.string('avatar').notNullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table
       .timestamp('updated_at')

@@ -1,70 +1,66 @@
+const { genNormalDeck, genBugAndResetCards } = require('./game');
+
 const knex = require('knex')(require('../../knexfile'));
 
 const createNewGame = async (roomUUID) => {
-  // console.log(deck);
-  // give each playr 7 cards rndom
-  //  draw cards
-  //
   try {
-    const players = await getAllPlayers(roomUUID);
-    const deck = await createDeck(players[0].room_id, players.length);
-    console.log(deck);
-  } catch (error) {
-    console.error(error);
-    return new Error('Unable to create Game');
-  }
-};
-const getAllPlayers = async (roomUUID) => {
-  try {
+    // Get all player for the Room
     const players = await knex('rooms')
       .join('players', 'players.room_id', 'rooms.id')
       .where('rooms.uuid  ', roomUUID)
       .select(
         'rooms.id as room_id',
         'rooms.uuid as room_uuid',
+        'players.id as id',
         'players.uuid as player_uuid',
         'players.username as username'
       );
+    const dbRoomId = players[0].room_id;
 
-    return players;
+    // Clean old cards
+    await knex('room_cards').del().where('room_id', dbRoomId);
+
+    // Populate with normal cards
+    const cards = genNormalDeck(dbRoomId);
+    await knex('room_cards').insert(cards);
+
+    // Draw normal cards for each player
+    const initialNumberCards = 4;
+    players.forEach((player) => {
+      for (let i = 0; i < initialNumberCards; i++) {
+        drawCard(player.room_id, player.id);
+      }
+    });
+    // generates Bug cards and give reset cards for each player
+    const bugs = genBugAndResetCards(dbRoomId, players);
+    await knex('room_cards').insert(bugs);
+
+    return;
   } catch (error) {
     console.error(error);
-    return new Error('Cant fetch players');
+    return new Error('Unable to create Game');
   }
 };
 
-const createDeck = async (roomId, numberOfPlayers) => {
+const drawCard = async (roomId, playerId) => {
   try {
-    const cards = normalDeckCards(roomId, numberOfPlayers);
-    console.log(cards);
-    const result = await knex('room_cards').insert(cards);
+    const cards = await knex('room_cards')
+      .where('room_id', roomId)
+      .where('player_id', null)
+      .select('id', 'card_id');
 
-    return result;
+    const rand = Math.floor(Math.random() * cards.length);
+
+    await knex('room_cards').where('id', cards[rand].id).update('player_id', playerId);
+
+    return drawCard;
   } catch (error) {
     console.error(error);
-    return new Error('Cant fetch players');
+    return new Error('Unable to Draw Cards');
   }
-};
-
-const normalDeckCards = (roomId, numberOfPlayers) => {
-  const cards = [];
-  for (let i = 0; i < numberOfPlayers - 1; i++) {
-    cards.push({ card_id: 7, room_id: roomId, player_id: null }); //'Bug'
-  }
-  for (let i = 0; i < numberOfPlayers; i++) {
-    cards.push({ card_id: 1, room_id: roomId, player_id: null }); //'Reset'
-  }
-  for (let i = 0; i < 4; i++) {
-    cards.push({ card_id: 2, room_id: roomId, player_id: null }); //'Git Cherry-Pick'
-    cards.push({ card_id: 3, room_id: roomId, player_id: null }); //'Git Blame'
-    cards.push({ card_id: 4, room_id: roomId, player_id: null }); //'Git Ignore'
-    cards.push({ card_id: 5, room_id: roomId, player_id: null }); //'Git Stash'
-    cards.push({ card_id: 6, room_id: roomId, player_id: null }); //'Git Merge'
-  }
-
-  return cards;
 };
 
 module.exports = {
   createNewGame,
+  drawCard,
 };

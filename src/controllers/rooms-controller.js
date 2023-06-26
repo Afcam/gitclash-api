@@ -20,27 +20,31 @@ const create = async (req, res, next) => {
 };
 
 const join = async (req, res) => {
-  const roomUUID = req.params.uuid || req.body.room_uuid;
-
-  if (!roomUUID) {
-    return res.status(400).send('Join requires a room uuid');
-  }
-
+  console.log('here');
   try {
-    const room = await knex('rooms').where({ uuid: roomUUID });
+    const roomUUID = req.body.room_uuid;
 
+    if (!roomUUID) {
+      return res.status(400).send('Join requires a room uuid');
+    }
+
+    // Gets the room id
+    const room = await knex('rooms').where({ uuid: roomUUID });
     if (room.length === 0) {
       return res.status(400).send('Room uuid does not exist');
     }
+
+    // Creates the new player in the db
     const playerUUID = createPlayerUUID();
     const result = await knex('players').insert({
       room_id: room[0].id,
       uuid: playerUUID,
       username: req.body.username,
+      avatar: req.body.avatar,
     });
 
     if (result.length === 0) {
-      return new Error('Unable to create new player');
+      return res.status(400).send('Failed to create new player');
     }
 
     const newPlayer = await knex('players')
