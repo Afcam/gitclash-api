@@ -36,6 +36,7 @@ const initSocket = (httpServer) => {
       });
 
       io.to(socket.id).emit('currentPlayer', {
+        player_uuid: socket.decoded.player_uuid,
         room_uuid: socket.decoded.room_uuid,
         username: player.username,
         avatar: player.avatar,

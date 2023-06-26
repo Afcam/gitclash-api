@@ -41,6 +41,8 @@ const handleStartGame = async (socket, io) => {
       .join('room_cards', 'room_cards.room_id', 'rooms.id')
       .where('room_cards.player_id', null);
     io.to(socket.decoded.room_uuid).emit('drawPile', drawPile.length);
+
+    io.to(socket.decoded.room_uuid).emit('started');
   } catch (error) {
     console.log(error);
   }
