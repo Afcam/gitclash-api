@@ -31,6 +31,7 @@ const createNewGame = async (roomUUID) => {
         drawCard(player.room_id, player.id);
       }
     });
+
     // generates Bug cards and give reset cards for each player
     const bugs = genBugAndResetCards(dbRoomId, players);
     await knex('room_cards').insert(bugs);

@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const ioAuth = require('./middleware/ioAuth');
-const { handlePlayCard } = require('./sockets/game');
+const { handlePlayCard, handleStartGame } = require('./sockets/game');
 const knex = require('knex')(require('../knexfile'));
 
 const initSocket = (httpServer) => {
@@ -19,12 +19,13 @@ const initSocket = (httpServer) => {
       console.log('A user connected', socket.id, socket.decoded.player_uuid);
 
       socket.join(socket.decoded.room_uuid);
+      socket.join(socket.decoded.player_uuid);
 
       const player = await knex('players')
         .where('players.uuid', socket.decoded.player_uuid)
         .limit(1);
 
-      io.emit('joined', {
+      io.to(socket.decoded.room_uuid).emit('joined', {
         title: 'Join',
         username: player[0].username,
         message: 'Joined the room',
@@ -42,8 +43,12 @@ const initSocket = (httpServer) => {
         handlePlayCard(socket, card, io);
       });
 
+      socket.on('start', () => {
+        handleStartGame(socket, io);
+      });
+
       socket.on('disconnect', () => {
-        io.emit('left', {
+        io.to(socket.decoded.room_uuid).emit('left', {
           title: 'Left',
           username: player[0].username,
           message: 'left the room',
