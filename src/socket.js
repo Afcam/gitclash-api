@@ -42,8 +42,8 @@ const initSocket = (httpServer) => {
         avatar: player.avatar,
       });
 
-      socket.on('playCard', (card) => {
-        handlePlayCard(socket, card, io);
+      socket.on('playCard', (message) => {
+        handlePlayCard(socket, message.card, io);
       });
 
       socket.on('start', () => {
