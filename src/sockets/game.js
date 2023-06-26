@@ -33,8 +33,14 @@ const handleStartGame = async (socket, io) => {
       io.to(player.player_uuid).emit('handCards', playerCards);
       playersInfo.push({ player_uuid: player.player_uuid, cards: playerCards.length });
     }
-
     io.to(socket.decoded.room_uuid).emit('players', playersInfo);
+
+    // Add draw and played
+    const drawPile = await knex('rooms')
+      .where('rooms.uuid', socket.decoded.room_uuid)
+      .join('room_cards', 'room_cards.room_id', 'rooms.id')
+      .where('room_cards.player_id', null);
+    io.to(socket.decoded.room_uuid).emit('drawPile', drawPile.length);
   } catch (error) {
     console.log(error);
   }

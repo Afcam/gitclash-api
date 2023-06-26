@@ -1,7 +1,7 @@
 const { Server } = require('socket.io');
 const ioAuth = require('./middleware/ioAuth');
 const { handlePlayCard, handleStartGame } = require('./sockets/game');
-const knex = require('knex')(require('../knexfile'));
+const { fetchPlayers, updatePlayerOnlineStatus } = require('./models/playerRepository');
 
 const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
@@ -16,27 +16,29 @@ const initSocket = (httpServer) => {
 
   io.on('connection', async (socket) => {
     try {
-      console.log('A user connected', socket.id, socket.decoded.player_uuid);
-
       socket.join(socket.decoded.room_uuid);
       socket.join(socket.decoded.player_uuid);
 
-      const player = await knex('players')
-        .where('players.uuid', socket.decoded.player_uuid)
-        .limit(1);
+      await updatePlayerOnlineStatus(socket.decoded.player_uuid, true);
+
+      // Get all players for the room
+      const players = await fetchPlayers(socket.decoded.room_uuid);
+      const player = players.find((player) => player.player_uuid === socket.decoded.player_uuid);
+
+      io.to(socket.decoded.room_uuid).emit('players', players);
 
       io.to(socket.decoded.room_uuid).emit('joined', {
         title: 'Join',
-        username: player[0].username,
+        username: player.username,
         message: 'Joined the room',
-        avatar: player[0].avatar,
+        avatar: player.avatar,
         timestamp: new Date(),
       });
 
       io.to(socket.id).emit('currentPlayer', {
         room_uuid: socket.decoded.room_uuid,
-        username: player[0].username,
-        avatar: player[0].avatar,
+        username: player.username,
+        avatar: player.avatar,
       });
 
       socket.on('playCard', (card) => {
@@ -47,12 +49,17 @@ const initSocket = (httpServer) => {
         handleStartGame(socket, io);
       });
 
-      socket.on('disconnect', () => {
+      socket.on('disconnect', async () => {
+        await updatePlayerOnlineStatus(socket.decoded.player_uuid, false);
+
+        const players = await fetchPlayers(socket.decoded.room_uuid);
+        io.to(socket.decoded.room_uuid).emit('players', players);
+
         io.to(socket.decoded.room_uuid).emit('left', {
           title: 'Left',
-          username: player[0].username,
-          message: 'left the room',
-          avatar: player[0].avatar,
+          username: player.username,
+          message: 'Left the room',
+          avatar: player.avatar,
           timestamp: new Date(),
         });
       });
@@ -61,67 +68,5 @@ const initSocket = (httpServer) => {
     }
   });
 };
-
-//   io.on('connection', async (socket) => {
-//     try {
-//       const roomUUID = socket.decoded.room_uuid;
-//       const playerUUID = socket.decoded.player_uuid;
-
-//       const player = await knex('players').where('players.uuid', playerUUID).limit(1);
-
-//       // Receive initial game states from the server
-//       socket.on('drawpile', (drawpile) => {
-//         // Update the drawpile on the client-side
-//       });
-
-//       // Receive initial game states from the server
-//       socket.on('drawpile', (drawpile) => {
-//         // Update the drawpile on the client-side
-//       });
-
-//       socket.on('playedCards', (playedCards) => {
-//         // Emit initial game states to the connected user
-//         socket.emit('drawpile', drawpile);
-//         socket.emit('playedCards', playedCards);
-//         socket.emit('nextPlayer', nextPlayer);
-//         // Update the played cards on the client-side
-//       });
-
-//       socket.on('nextPlayer', (nextPlayer) => {
-//         // Update the next player on the client-side
-//       });
-
-//       socket.join(roomUUID);
-
-//       if (player.length === 0) {
-//         socket.disconnect();
-//       }
-
-//       socket.broadcast.to(roomUUID).emit('action', {
-//         title: 'Joined',
-//         room_id: roomUUID,
-//         username: player[0].username,
-//         message: 'Joined the room',
-//         timestamp: new Date(),
-//       });
-
-//       socket.on('gameState', () => {
-//         io.to(roomUUID).emit('gameState', { message: 'something' });
-//       });
-
-//       socket.on('disconnect', () => {
-//         socket.broadcast.to(roomUUID).emit('action', {
-//           title: 'Left',
-//           room_id: roomUUID,
-//           username: player[0].username || '',
-//           message: 'Left the room',
-//           timestamp: new Date(),
-//         });
-//       });
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   });
-// };
 
 module.exports = { initSocket };

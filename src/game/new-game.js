@@ -26,11 +26,11 @@ const createNewGame = async (roomUUID) => {
 
     // Draw normal cards for each player
     const initialNumberCards = 4;
-    players.forEach((player) => {
+    for (const player of players) {
       for (let i = 0; i < initialNumberCards; i++) {
-        drawCard(player.room_id, player.id);
+        await drawCard(player.room_id, player.id);
       }
-    });
+    }
 
     // generates Bug cards and give reset cards for each player
     const bugs = genBugAndResetCards(dbRoomId, players);
@@ -52,9 +52,11 @@ const drawCard = async (roomId, playerId) => {
 
     const rand = Math.floor(Math.random() * cards.length);
 
-    await knex('room_cards').where('id', cards[rand].id).update('player_id', playerId);
+    const newCard = await knex('room_cards')
+      .where('id', cards[rand].id)
+      .update('player_id', playerId);
 
-    return drawCard;
+    return newCard;
   } catch (error) {
     console.error(error);
     return new Error('Unable to Draw Cards');

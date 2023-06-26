@@ -20,7 +20,6 @@ const create = async (req, res, next) => {
 };
 
 const join = async (req, res) => {
-  console.log('here');
   try {
     const roomUUID = req.body.room_uuid;
 

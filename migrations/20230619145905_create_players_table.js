@@ -11,6 +11,7 @@ exports.up = function (knex) {
     table.string('username').notNullable();
     table.string('uuid').notNullable();
     table.string('avatar').notNullable();
+    table.boolean('online').notNullable().defaultTo(false);
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table
       .timestamp('updated_at')
