@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const ioAuth = require('./middleware/ioAuth');
 const { handlePlayCard, handleStartGame, handleDrawCard } = require('./sockets/game');
 const { fetchPlayers, updatePlayerOnlineStatus } = require('./models/playerRepository');
+const knex = require('knex')(require('../knexfile'));
 
 const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
@@ -25,6 +26,16 @@ const initSocket = (httpServer) => {
       const players = await fetchPlayers(socket.decoded.room_uuid);
       const player = players.find((player) => player.player_uuid === socket.decoded.player_uuid);
 
+      socket.on('getPlayersCards', async () => {
+        //  TODO: make return the amount of cards
+
+        io.to(socket.id).emit('playersCards', players);
+      });
+      io.to(socket.decoded.room_uuid).emit('players', players);
+
+      socket.on('getPlayers', () => {
+        io.to(socket.id).emit('players', players);
+      });
       io.to(socket.decoded.room_uuid).emit('players', players);
 
       io.to(socket.decoded.room_uuid).emit('joined', {
@@ -35,11 +46,15 @@ const initSocket = (httpServer) => {
         timestamp: new Date(),
       });
 
-      io.to(socket.id).emit('currentPlayer', {
+      const currentPlayer = {
         player_uuid: socket.decoded.player_uuid,
         room_uuid: socket.decoded.room_uuid,
         username: player.username,
         avatar: player.avatar,
+      };
+
+      socket.on('getCurrentPlayer', () => {
+        io.to(socket.id).emit('currentPlayer', currentPlayer);
       });
 
       socket.on('playCard', (message) => {
