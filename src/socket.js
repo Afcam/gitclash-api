@@ -68,6 +68,25 @@ const initSocket = (httpServer) => {
         handleStartGame(socket, io);
       });
 
+      socket.on('getPlayersInfo', async () => {
+        const playersInfo = [];
+        for (const player of players) {
+          const playerCards = await knex('players')
+            .join('room_cards', 'room_cards.player_id', 'players.id')
+            .join('cards', 'cards.id', 'room_cards.card_id')
+            .where('players.uuid', player.player_uuid)
+            .select('cards.type', 'cards.action', 'cards.comment', 'room_cards.id');
+
+          playersInfo.push({
+            player_uuid: player.player_uuid,
+            cards: playerCards.length,
+            avatar: player.avatar,
+            username: player.username,
+          });
+        }
+        io.to(socket.decoded.room_uuid).emit('playersInfo', playersInfo);
+      });
+
       socket.on('disconnect', async () => {
         await updatePlayerOnlineStatus(socket.decoded.player_uuid, false);
 
