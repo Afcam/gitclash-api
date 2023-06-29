@@ -1,6 +1,6 @@
 const knex = require('knex')(require('../../knexfile'));
 
-const { createNewGame } = require('../game/new-game');
+const { createNewGame, drawCard } = require('../game/new-game');
 const { fetchPlayers } = require('../models/playerRepository');
 
 const handlePlayCard = async (socket, card, io) => {
@@ -19,7 +19,27 @@ const handlePlayCard = async (socket, card, io) => {
   }
 };
 
-function handleDrawCard(socket, io) {
+async function handleDrawCard(socket, io) {
+  const player = await knex('rooms')
+    .join('players', 'players.room_id', 'rooms.id')
+    .where('rooms.uuid  ', socket.decoded.room_uuid)
+    .where('players.uuid  ', socket.decoded.player_uuid);
+
+  await drawCard(player[0].room_id, player[0].id);
+  const drawPile = await knex('rooms')
+    .where('rooms.uuid', socket.decoded.room_uuid)
+    .join('room_cards', 'room_cards.room_id', 'rooms.id')
+    .where('room_cards.player_id', null);
+  io.to(socket.decoded.room_uuid).emit('drawPile', drawPile.length);
+
+  const playerCards = await knex('players')
+    .join('room_cards', 'room_cards.player_id', 'players.id')
+    .join('cards', 'cards.id', 'room_cards.card_id')
+    .where('players.uuid', socket.decoded.player_uuid)
+    .select('cards.type', 'cards.action', 'cards.comment', 'room_cards.id');
+
+  io.to(socket.decoded.player_uuid).emit('handCards', playerCards);
+
   // io.emit('cardPlayed', { player_uuid: socket.decoded.player_uuid, card });
 }
 const handleStartGame = async (socket, io) => {

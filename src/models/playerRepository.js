@@ -9,7 +9,8 @@ async function fetchPlayers(roomUUID) {
         'players.uuid as player_uuid',
         'players.username',
         'players.avatar',
-        'players.online'
+        'players.online',
+        'players.id'
       );
 
     return players;
