@@ -33,8 +33,9 @@ const initSocket = (httpServer) => {
       });
       io.to(socket.decoded.room_uuid).emit('players', players);
 
-      socket.on('getPlayers', () => {
-        io.to(socket.id).emit('players', players);
+      socket.on('getPlayers', async () => {
+        const allPlayers = await fetchPlayers(socket.decoded.room_uuid);
+        io.to(socket.id).emit('players', allPlayers);
       });
       io.to(socket.decoded.room_uuid).emit('players', players);
 
@@ -52,6 +53,8 @@ const initSocket = (httpServer) => {
         username: player.username,
         avatar: player.avatar,
       };
+
+      io.to(socket.id).emit('currentPlayer', currentPlayer);
 
       socket.on('getCurrentPlayer', () => {
         io.to(socket.id).emit('currentPlayer', currentPlayer);
